@@ -24,7 +24,9 @@ import javax.swing.JPanel;
  *  		  of the sprite), I may be able to the same with the environment. Draw the entire static portion of the map as a single image, and simply
  *  		  display what is necessary on screen. Maybe like an extra 5% to prevent BS from happening.
  *  	- Entity will be a super class from which all other types (player, enemies, objects, etc...) will be derived.
- *  		- All entities should store their location, size, and type. I was going to add spritesheets or images, but I realized this could cause memeory
+ *  		- All entities should store their location, size, and type. I was going to add spritesheets or images, but I realized this could cause memory
+ *  		  problems since having multiple instances of the same entity means that there are multiple of that spritesheet loaded in memory. So maybe
+ *  		  a new class?
  */
 
 @SuppressWarnings("serial")
@@ -39,12 +41,18 @@ public class GamePanel extends JPanel implements Runnable, KeyListener{
 	//public static FileReader fileReader; <--- May use for file reading
 	private static final int FRAME_RATE = 60;
 	
-	// Controls \\ 0 - Left, 1 - Right, 2 - Confirm, 3 - Cancel, 4 - Action1, 5 - Pause
-	private boolean[] controls = new boolean[] {false,false,false,false,false,false};
+	// Camera \\
+	private Entity cameraFocusTarget;
+	
+	// Controls \\ 0 - Left, 1 - Right, 2 - Up, 3 - Down, 4 - Confirm, 5 - Cancel, 6 - Pause, 7 - Action1
+	private boolean[] controls = new boolean[] {false,false, false, false, false, false, false, false};
 	
 	// Render \\
 	private static Graphics2D g2d;
 	private BufferedImage image;
+	
+	// TEMPORARY Game Objects \\
+	private Character player;
 	
 	// Constructor \\
 	public GamePanel() {
@@ -95,6 +103,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener{
 		image = new BufferedImage(WIDTH,HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		g2d = image.createGraphics();
 		running = true;
+		
+		// TEMPORARY Make player and scene \\
+		player = new Character(300,300,50,50);
 	}
 	
 	private void update() {
@@ -102,12 +113,48 @@ public class GamePanel extends JPanel implements Runnable, KeyListener{
 		 * Read player input
 		 * Resolve the frame (Do all the things. Break this up into smaller parts)
 		 * Add more...
-		 * */
+		 */
+		if(controls[0]) {
+			// move left
+			player.accelerateX(-5);
+		}
+		if(controls[1]) {
+			// move right
+			player.accelerateX(5);
+		}
+		if(controls[2]) {
+			// move up
+			player.accelerateY(-5);
+		}
+		if(controls[3]) {
+			// move down
+			player.accelerateY(5);
+		}
+		
+		if(controls[4]) {
+			// confirm once. I don't want repeated confirms going off.
+		}
+		if(controls[5]) {
+			// cancel once
+		}
+		if(controls[6]) {
+			// pause
+		}
+		if(controls[7]) {
+			// action1
+		}
+		
+		player.move();
+		if(cameraFocusTarget != null) {
+			findCameraLocation();
+		} else {
+			// Direct the camera? Or it stays still?
+		}
 	}
 	private void findCameraLocation() {
 		/*
 		 * TODO
-		 * There's gotta be a better way than doing this every frame. Or maybe I'm to anal about this.
+		 * There's gotta be a better way than doing this every frame. Or maybe I'm too anal about this.
 		 * I wrote this a while back. The idea is that the 'camera' is focused on a target. As the target moves, the camera follows.
 		 * The reason we divide width and height by 2 is because we want the camera to look the the focus target's center.
 		 * We then compare these values to the min and max values for x and y. We don't want the camera to be able to travel out of bounds. So when an edge
@@ -137,9 +184,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener{
 	
 	private void render(Graphics2D g2d) {
 		
-		g2d.setColor(Color.BLUE);
+		g2d.setColor(Color.BLACK);
 		g2d.clearRect(0, 0, WIDTH, HEIGHT);
-		g2d.fillRect(100, 100, 400, 300);
+		g2d.setColor(Color.BLUE);
+		g2d.fillRect(player.getX(), player.getY(), player.getWidth(), player.getHeight());
 		
 		/* TODO
 		 * I think it's good to set layers.
@@ -151,24 +199,28 @@ public class GamePanel extends JPanel implements Runnable, KeyListener{
 	@Override
 	public void keyPressed(KeyEvent e) {
 		switch(e.getKeyCode()) {
-			case KeyEvent.VK_A:     controls[0] = true;
-			case KeyEvent.VK_D:     controls[1] = true;
-			case KeyEvent.VK_J:     controls[2] = true;
-			case KeyEvent.VK_K:     controls[3] = true;
-			case KeyEvent.VK_L:     controls[4] = true;
-			case KeyEvent.VK_SPACE: controls[5] = true;
+			case KeyEvent.VK_A:     controls[0] = true; break;
+			case KeyEvent.VK_D:     controls[1] = true; break;
+			case KeyEvent.VK_W:     controls[2] = true; break;
+			case KeyEvent.VK_S:     controls[3] = true; break;
+			case KeyEvent.VK_J:     controls[4] = true; break;
+			case KeyEvent.VK_K:     controls[5] = true; break;
+			case KeyEvent.VK_SPACE: controls[6] = true; break;
+			case KeyEvent.VK_L:     controls[7] = true; break;
 		}
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
 		switch(e.getKeyCode()) {
-			case KeyEvent.VK_A:     controls[0] = false;
-			case KeyEvent.VK_D:     controls[1] = false;
-			case KeyEvent.VK_J:     controls[2] = false;
-			case KeyEvent.VK_K:     controls[3] = false;
-			case KeyEvent.VK_L:     controls[4] = false;
-			case KeyEvent.VK_SPACE: controls[5] = false;
+			case KeyEvent.VK_A:     controls[0] = false; break;
+			case KeyEvent.VK_D:     controls[1] = false; break;
+			case KeyEvent.VK_W:     controls[2] = false; break;
+			case KeyEvent.VK_S:     controls[3] = false; break;
+			case KeyEvent.VK_J:     controls[4] = false; break;
+			case KeyEvent.VK_K:     controls[5] = false; break;
+			case KeyEvent.VK_SPACE: controls[6] = false; break;
+			case KeyEvent.VK_L:     controls[7] = false; break;
 		}
 	}
 
